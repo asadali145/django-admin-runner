@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from django.core.exceptions import ImproperlyConfigured
 from django.urls import reverse
 
 from . import BaseCommandRunner, RunResult
@@ -11,7 +12,14 @@ def _get_django_task():
     """Return a cached django.tasks-wrapped version of ``execute_command``."""
     global _wrapped_task
     if _wrapped_task is None:
-        from django.tasks import task
+        try:
+            from django.tasks import task
+        except ImportError as exc:  # pragma: no cover - only on Django < 6
+            msg = (
+                "Django task backend requires django.tasks (Django 6+). "
+                "Use ADMIN_RUNNER_BACKEND='sync', 'celery', or 'django-q2' on older versions."
+            )
+            raise ImproperlyConfigured(msg) from exc
 
         from django_admin_runner.tasks import execute_command
 

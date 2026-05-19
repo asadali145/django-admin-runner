@@ -3,7 +3,7 @@
 ## Requirements
 
 - Python 3.12+
-- Django 6.0+
+- Django 5.2+
 
 ## Install
 
@@ -51,8 +51,9 @@ pip install "django-admin-runner[unfold]"
 
 ## Task backend (optional)
 
-By default the package uses Django 6.0's built-in task system (`django.tasks`).
-With `ImmediateBackend` (the default when no `TASKS` setting is configured)
+By default the package uses Django 6.0's built-in task system (`django.tasks`)
+when available. On Django 5.2, it automatically falls back to the sync runner.
+With Django Tasks + `ImmediateBackend` (the default when no `TASKS` setting is configured)
 commands run synchronously in the request cycle.
 
 To configure a different backend:

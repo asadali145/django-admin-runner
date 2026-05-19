@@ -1,9 +1,11 @@
 import sys
 import unittest.mock
 from contextlib import contextmanager
+from importlib.util import find_spec
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ImproperlyConfigured
 from django.test import override_settings
 
 from django_admin_runner.models import CommandExecution
@@ -12,6 +14,7 @@ from django_admin_runner.runners.django_tasks import _is_immediate_backend
 from django_admin_runner.runners.sync import SyncCommandRunner
 
 User = get_user_model()
+DJANGO_TASKS_AVAILABLE = find_spec("django.tasks") is not None
 
 
 @pytest.fixture
@@ -85,6 +88,10 @@ class TestSyncCommandRunner:
 
 
 @pytest.mark.django_db
+@pytest.mark.skipif(
+    not DJANGO_TASKS_AVAILABLE,
+    reason="django.tasks not available on this Django version",
+)
 class TestDjangoTaskRunner:
     def test_success_status(self, user, db):
         from django_admin_runner.runners.django_tasks import DjangoTaskRunner
@@ -160,9 +167,9 @@ def test_is_immediate_backend_no_tasks_setting():
 
 
 def test_get_runner_default_returns_django_task_runner():
-    with override_settings(ADMIN_RUNNER_BACKEND="django"):
-        runner = get_runner()
-        assert runner.backend == "django"
+    runner = get_runner()
+    expected = "django" if DJANGO_TASKS_AVAILABLE else "sync"
+    assert runner.backend == expected
 
 
 def test_get_runner_sync():
@@ -180,10 +187,28 @@ def test_get_runner_no_setting_defaults_to_django():
         delattr(django_settings, "ADMIN_RUNNER_BACKEND")
     try:
         runner = get_runner()
-        assert runner.backend == "django"
+        expected = "django" if DJANGO_TASKS_AVAILABLE else "sync"
+        assert runner.backend == expected
     finally:
         if original is not None:
             django_settings.ADMIN_RUNNER_BACKEND = original
+
+
+def test_get_runner_django_falls_back_to_sync_when_unavailable(monkeypatch):
+    monkeypatch.setattr("django_admin_runner.runners._supports_django_tasks", lambda: False)
+    with override_settings(ADMIN_RUNNER_BACKEND="django"):
+        runner = get_runner()
+    assert runner.backend == "sync"
+
+
+def test_get_django_task_raises_helpful_error_on_import_failure(monkeypatch):
+    from django_admin_runner.runners import django_tasks as django_tasks_module
+
+    monkeypatch.setattr(django_tasks_module, "_wrapped_task", None)
+    monkeypatch.setitem(sys.modules, "django.tasks", None)
+
+    with pytest.raises(ImproperlyConfigured, match="requires django.tasks"):
+        django_tasks_module._get_django_task()
 
 
 def test_get_runner_dotted_path():

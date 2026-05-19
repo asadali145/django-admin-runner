@@ -233,7 +233,8 @@ def test_256_to_rgb_red():
 def test_url_in_plain_text():
     html = linkify_urls("See https://example.com/export.csv for details")
     assert (
-        '<a href="https://example.com/export.csv" target="_blank">https://example.com/export.csv</a>'
+        '<a href="https://example.com/export.csv" target="_blank" rel="noopener noreferrer">'
+        "https://example.com/export.csv</a>"
         in html
     )
     assert "See " in html
@@ -246,6 +247,7 @@ def test_url_with_ansi_spans():
     linked = linkify_urls(colored)
     assert 'href="https://example.com/report"' in linked
     assert 'target="_blank"' in linked
+    assert 'rel="noopener noreferrer"' in linked
     assert "ansi-fg-2" in linked
 
 

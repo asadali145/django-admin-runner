@@ -4,12 +4,12 @@ A runner decides *how* a management command is executed. Configure it with:
 
 ```python
 # settings.py
-ADMIN_RUNNER_BACKEND = "django"  # default
+ADMIN_RUNNER_BACKEND = "django"
 ```
 
 ## Built-in runners
 
-### `"django"` — DjangoTaskRunner (default)
+### `"django"` — DjangoTaskRunner
 
 Uses Django 6.0's built-in `django.tasks` system. When `ImmediateBackend` is
 configured, commands run synchronously in the request cycle. With other backends
@@ -21,8 +21,11 @@ TASKS = {
         "BACKEND": "django.tasks.backends.immediate.ImmediateBackend",
     }
 }
-# ADMIN_RUNNER_BACKEND not required — "django" is the default
+# ADMIN_RUNNER_BACKEND = "django"
 ```
+
+On Django 5.2, `django.tasks` is not available; the package defaults to `"sync"`
+unless you explicitly configure another backend.
 
 ### `"sync"` — SyncCommandRunner
 

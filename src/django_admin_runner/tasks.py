@@ -6,6 +6,8 @@ import traceback
 from django.core.management import call_command
 from django.utils.timezone import now
 
+from ._html_sanitize import sanitize_result_html
+
 
 class _TtyStringIO(io.StringIO):
     """StringIO that reports itself as a TTY.
@@ -119,6 +121,8 @@ def execute_command(command_name: str, kwargs: dict, execution_pk: int) -> None:
         result_html = exec_ctx.get("result_html")
         if result_html is not None:
             execution.result_html = str(result_html)
+        if execution.result_html:
+            execution.result_html = sanitize_result_html(execution.result_html)
 
         # Save execution record
         execution.save(update_fields=["status", "stdout", "stderr", "result_html", "finished_at"])

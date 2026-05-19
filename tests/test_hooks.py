@@ -314,6 +314,32 @@ class TestHooksIntegration:
         finally:
             hooks_module.get_hooks = original_get_hooks
 
+    def test_pre_save_hook_result_html_is_sanitized(self, superuser):
+        """Result HTML from hooks is sanitized before persistence."""
+        from django_admin_runner.models import CommandExecution
+        from django_admin_runner.tasks import execute_command
+
+        class ResultSetterHook(CommandHook):
+            def pre_save(self, command_name, kwargs, execution, ctx):
+                execution.result_html = '<h2>OK</h2><script>alert("xss")</script>'
+
+        import django_admin_runner.hooks as hooks_module
+
+        original_get_hooks = hooks_module.get_hooks
+        hooks_module.get_hooks = lambda: [ResultSetterHook()]
+        try:
+            execution = CommandExecution.objects.create(
+                command_name="simple_command",
+                triggered_by=superuser,
+            )
+            execute_command("simple_command", {}, execution.pk)
+            execution.refresh_from_db()
+            assert execution.status == "SUCCESS"
+            assert "<script" not in execution.result_html.lower()
+            assert "<h2>OK</h2>" in execution.result_html
+        finally:
+            hooks_module.get_hooks = original_get_hooks
+
     def test_pre_save_and_post_save_run_on_failure(self, superuser):
         """Pre_save and post_save run even when the command fails."""
         from django_admin_runner.models import CommandExecution

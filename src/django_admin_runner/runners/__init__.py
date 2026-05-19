@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
@@ -33,6 +34,10 @@ class BaseCommandRunner:
         raise NotImplementedError
 
 
+def _supports_django_tasks() -> bool:
+    return importlib.util.find_spec("django.tasks") is not None
+
+
 def get_runner() -> BaseCommandRunner:
     """Instantiate and return the runner configured by ``ADMIN_RUNNER_BACKEND``.
 
@@ -45,7 +50,11 @@ def get_runner() -> BaseCommandRunner:
     """
     from django.conf import settings
 
-    backend = getattr(settings, "ADMIN_RUNNER_BACKEND", "django")
+    backend = getattr(
+        settings,
+        "ADMIN_RUNNER_BACKEND",
+        "django" if _supports_django_tasks() else "sync",
+    )
 
     if backend == "sync":
         from .sync import SyncCommandRunner
@@ -60,6 +69,10 @@ def get_runner() -> BaseCommandRunner:
 
         return DjangoQ2CommandRunner()
     if backend == "django":
+        if not _supports_django_tasks():
+            from .sync import SyncCommandRunner
+
+            return SyncCommandRunner()
         from .django_tasks import DjangoTaskRunner
 
         return DjangoTaskRunner()
