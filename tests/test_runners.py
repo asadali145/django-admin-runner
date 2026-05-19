@@ -87,7 +87,10 @@ class TestSyncCommandRunner:
 
 
 @pytest.mark.django_db
-@pytest.mark.skipif(not HAS_DJANGO_TASKS, reason="django.tasks not available on this Django version")
+@pytest.mark.skipif(
+    not HAS_DJANGO_TASKS,
+    reason="django.tasks not available on this Django version",
+)
 class TestDjangoTaskRunner:
     def test_success_status(self, user, db):
         from django_admin_runner.runners.django_tasks import DjangoTaskRunner

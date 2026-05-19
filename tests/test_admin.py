@@ -156,17 +156,19 @@ class TestResultView:
         assert "Hello world output" in content
 
     def test_result_view_sanitizes_result_html(self, admin_client, superuser):
+        payload = '<h1>Safe</h1><script>alert("xss")</script><a href="javascript:alert(1)">x</a>'
         execution = CommandExecution.objects.create(
             command_name="simple_command",
             triggered_by=superuser,
             status="SUCCESS",
-            result_html='<h1>Safe</h1><script>alert("xss")</script><a href="javascript:alert(1)">x</a>',
+            result_html=payload,
         )
         url = reverse("admin:django_admin_runner_commandexecution_result", args=[execution.pk])
         response = admin_client.get(url)
         assert response.status_code == 200
         content = response.content.decode()
-        assert "<script" not in content.lower()
+        assert payload not in content
+        assert 'alert("xss")' not in content
         assert 'href="javascript:alert(1)"' not in content
         assert "<h1>Safe</h1>" in content
 

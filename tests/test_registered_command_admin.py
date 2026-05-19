@@ -139,8 +139,8 @@ class TestRegisteredCommandAdminChangelist:
         url = reverse("admin:django_admin_runner_registeredcommand_changelist")
         response = admin_client.get(url, follow=True)
         content = response.content.decode()
-        assert "<script" not in content.lower()
-        assert "onerror=" not in content.lower()
+        assert '<img src=x onerror="alert(1)">' not in content
+        assert '<script>alert("x")</script>' not in content
         assert "&lt;img src=x onerror=&quot;alert(1)&quot;&gt;" in content
         assert "&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;" in content
 
