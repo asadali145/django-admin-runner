@@ -6,10 +6,12 @@ from django.contrib import admin
 from django.http import Http404, HttpResponse, HttpResponseForbidden
 from django.shortcuts import redirect, render
 from django.urls import path, reverse
+from django.utils.html import escape, format_html
 from django.utils.safestring import SafeString, mark_safe
 
 from ._ansi import ansi_to_html as _convert_ansi
 from ._ansi import linkify_urls as _linkify
+from ._html_sanitize import sanitize_result_html
 from .admin_compat import get_model_admin_base, get_template, is_unfold_installed
 from .forms import form_from_command
 from .models import CommandExecution, RegisteredCommand
@@ -113,14 +115,14 @@ class RegisteredCommandAdmin(_ModelAdminBase):  # type: ignore[misc]
 
     @admin.display(description="Name", ordering="name")
     def name_link(self, obj: RegisteredCommand) -> SafeString:
-        name_html = f"<strong>{obj.display_name}</strong>"
+        name_html = f"<strong>{escape(obj.display_name)}</strong>"
         desc_html = ""
         if obj.description:
             desc_html = (
                 f'<br><span style="color:var(--body-quiet-color,#666);'
                 f"max-width:100%;display:block;overflow:hidden;"
                 f"text-overflow:ellipsis;white-space:nowrap;"
-                f'font-size:12px;">{obj.description}</span>'
+                f'font-size:12px;">{escape(obj.description)}</span>'
             )
         if obj.active:
             run_url = reverse("admin:django_admin_runner_command_run", args=[obj.name])
@@ -244,17 +246,21 @@ class CommandExecutionAdmin(_ModelAdminBase):  # type: ignore[misc]
     def result_html_display(self, obj: CommandExecution) -> SafeString:
         if not obj.result_html:
             return cast(SafeString, mark_safe("<em>—</em>"))
+        sanitized_result = sanitize_result_html(str(obj.result_html))
         result_url = reverse(
             "admin:django_admin_runner_commandexecution_result",
             args=[obj.pk],
         )
-        html = (
-            f'<div style="max-height:300px;overflow:auto;border:1px solid #ddd;'
-            f'padding:8px;border-radius:4px;margin-bottom:8px;">'
-            f"{obj.result_html}</div>"
-            f'<a href="{result_url}">Full View</a>'
+        return cast(
+            SafeString,
+            format_html(
+                '<div style="max-height:300px;overflow:auto;border:1px solid #ddd;'
+                'padding:8px;border-radius:4px;margin-bottom:8px;">{}</div>'
+                '<a href="{}">Full View</a>',
+                mark_safe(sanitized_result),
+                result_url,
+            ),
         )
-        return cast(SafeString, mark_safe(html))
 
     @admin.display(description="", ordering="created_at")
     def result_button(self, obj: CommandExecution) -> SafeString:
@@ -372,7 +378,7 @@ class CommandExecutionAdmin(_ModelAdminBase):  # type: ignore[misc]
         execution = self._get_execution(request, object_id)
 
         if execution.result_html:
-            content = cast(SafeString, mark_safe(execution.result_html))
+            content = cast(SafeString, mark_safe(sanitize_result_html(str(execution.result_html))))
         else:
             stdout = str(execution.stdout)
             content = _ansi_to_html(stdout) if stdout else cast(SafeString, mark_safe(""))

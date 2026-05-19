@@ -220,7 +220,9 @@ def linkify_urls(html: str) -> str:
             stripped.append(url[-1])
             url = url[:-1]
         href = _html.unescape(url)
-        link = f'<a href="{_html.escape(href)}" target="_blank">{url}</a>'
+        link = (
+            f'<a href="{_html.escape(href)}" target="_blank" rel="noopener noreferrer">{url}</a>'
+        )
         # Re-append stripped punctuation after the link
         return link + "".join(reversed(stripped))
 

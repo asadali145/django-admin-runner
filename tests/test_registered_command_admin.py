@@ -128,6 +128,22 @@ class TestRegisteredCommandAdminChangelist:
         content = response.content.decode()
         assert "Some help text" in content
 
+    def test_name_link_escapes_html_in_metadata(self, admin_client):
+        RegisteredCommand.objects.create(
+            name="xss_cmd",
+            group="G1",
+            display_name='<img src=x onerror="alert(1)">',
+            description='<script>alert("x")</script>',
+            active=True,
+        )
+        url = reverse("admin:django_admin_runner_registeredcommand_changelist")
+        response = admin_client.get(url, follow=True)
+        content = response.content.decode()
+        assert "<script" not in content.lower()
+        assert "onerror=" not in content.lower()
+        assert "&lt;img src=x onerror=&quot;alert(1)&quot;&gt;" in content
+        assert "&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;" in content
+
     def test_history_link_present(self, admin_client):
         self._create_commands()
         url = reverse("admin:django_admin_runner_registeredcommand_changelist")

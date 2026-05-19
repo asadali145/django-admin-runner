@@ -34,8 +34,9 @@ def handle(self, *args, **options):
 ```
 
 The HTML is stored in the `CommandExecution.result_html` field and rendered on
-the execution detail page in the admin. Last writer wins if called multiple
-times.
+the execution detail page in the admin. Dangerous constructs (such as `<script>`
+tags, inline event handlers, and `javascript:` links) are sanitized before
+storage/rendering. Last writer wins if called multiple times.
 
 ## Hooks
 

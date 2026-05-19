@@ -1,7 +1,7 @@
 """
 Classic example: plain Django admin + Django Tasks ImmediateBackend.
 
-Zero extra dependencies beyond Django 6.0.
+Zero extra dependencies beyond Django.
 Run with: python manage.py runserver
 """
 
@@ -65,7 +65,7 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Django 6.0 Tasks — runs commands inline (no worker needed)
+# Django Tasks (Django 6+) — runs commands inline (no worker needed)
 TASKS = {
     "default": {
         "BACKEND": "django.tasks.backends.immediate.ImmediateBackend",

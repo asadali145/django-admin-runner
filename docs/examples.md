@@ -34,13 +34,13 @@ Each demonstrates a different runner and integration pattern.
     ### Key configuration
 
     ```python
-    # settings.py — Django 6.0 Tasks with ImmediateBackend (synchronous)
+    # settings.py — Django Tasks (Django 6+) with ImmediateBackend (synchronous)
     TASKS = {
         "default": {
             "BACKEND": "django.tasks.backends.immediate.ImmediateBackend",
         }
     }
-    # No ADMIN_RUNNER_BACKEND needed — DjangoTaskRunner is the default
+    # No ADMIN_RUNNER_BACKEND needed on Django 6+ (DjangoTaskRunner is the default)
     ```
 
     ### Example command
