@@ -28,6 +28,11 @@ def _ansi_to_html(text: str) -> SafeString:
     return cast(SafeString, mark_safe(f'<pre class="ansi-output">{html}</pre>'))
 
 
+def _safe_result_html_fragment(text: str) -> SafeString:
+    """Sanitize rich result HTML, then mark safe for template rendering."""
+    return cast(SafeString, mark_safe(sanitize_result_html(text)))
+
+
 # ---------------------------------------------------------------------------
 # Mixin for model admins that want attached command run links
 # ---------------------------------------------------------------------------
@@ -246,7 +251,6 @@ class CommandExecutionAdmin(_ModelAdminBase):  # type: ignore[misc]
     def result_html_display(self, obj: CommandExecution) -> SafeString:
         if not obj.result_html:
             return cast(SafeString, mark_safe("<em>—</em>"))
-        sanitized_result = sanitize_result_html(str(obj.result_html))
         result_url = reverse(
             "admin:django_admin_runner_commandexecution_result",
             args=[obj.pk],
@@ -257,7 +261,7 @@ class CommandExecutionAdmin(_ModelAdminBase):  # type: ignore[misc]
                 '<div style="max-height:300px;overflow:auto;border:1px solid #ddd;'
                 'padding:8px;border-radius:4px;margin-bottom:8px;">{}</div>'
                 '<a href="{}">Full View</a>',
-                mark_safe(sanitized_result),
+                _safe_result_html_fragment(str(obj.result_html)),
                 result_url,
             ),
         )
@@ -378,7 +382,7 @@ class CommandExecutionAdmin(_ModelAdminBase):  # type: ignore[misc]
         execution = self._get_execution(request, object_id)
 
         if execution.result_html:
-            content = cast(SafeString, mark_safe(sanitize_result_html(str(execution.result_html))))
+            content = _safe_result_html_fragment(str(execution.result_html))
         else:
             stdout = str(execution.stdout)
             content = _ansi_to_html(stdout) if stdout else cast(SafeString, mark_safe(""))
